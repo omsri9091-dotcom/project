@@ -10,14 +10,39 @@ export const register = async (req: Request, res: Response): Promise<void> => {
   try {
     const { name, email, password, role = 'STUDENT', studentId, department, semester } = req.body;
 
+    // Validate all required fields
     if (!name || !email || !password) {
       res.status(400).json({ success: false, message: 'Please provide all required fields (name, email, password).' });
+      return;
+    }
+
+    if (!studentId) {
+      res.status(400).json({ success: false, message: 'Student ID is required.' });
+      return;
+    }
+
+    if (!department) {
+      res.status(400).json({ success: false, message: 'Department is required.' });
+      return;
+    }
+
+    const semesterNum = Number(semester);
+    if (!semesterNum || semesterNum < 1 || semesterNum > 8) {
+      res.status(400).json({ success: false, message: 'Semester must be a number between 1 and 8.' });
       return;
     }
 
     const existingUser = await User.findOne({ email: email.toLowerCase() });
     if (existingUser) {
       res.status(400).json({ success: false, message: 'An account with this email address already exists.' });
+      return;
+    }
+
+    // Check if student ID already exists
+    const sId = studentId.toUpperCase();
+    const existingStudentId = await Student.findOne({ studentId: sId });
+    if (existingStudentId) {
+      res.status(400).json({ success: false, message: 'This Student ID is already registered.' });
       return;
     }
 
@@ -29,21 +54,20 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       email: email.toLowerCase(),
       password: hashedPassword,
       role: role.toUpperCase() === 'ADMIN' ? 'ADMIN' : 'STUDENT',
-      studentId: studentId ? studentId.toUpperCase() : undefined,
-      department: department || 'Computer Science',
-      semester: Number(semester) || 1,
+      studentId: sId,
+      department,
+      semester: semesterNum,
     });
 
     let studentProfile = null;
     if (user.role === 'STUDENT') {
-      const sId = studentId ? studentId.toUpperCase() : `ADX-${Math.floor(1000 + Math.random() * 9000)}`;
       studentProfile = await Student.create({
         userId: user._id,
         studentId: sId,
         name: user.name,
         email: user.email,
-        department: user.department,
-        semester: user.semester,
+        department: department,
+        semester: semesterNum,
         attendance: 75,
         studyHours: 3.5,
         previousMarks: 72,
@@ -57,8 +81,6 @@ export const register = async (req: Request, res: Response): Promise<void> => {
         performanceLevel: 'Good',
         riskLevel: 'Low',
       });
-      user.studentId = sId;
-      await user.save();
     }
 
     const token = jwt.sign(

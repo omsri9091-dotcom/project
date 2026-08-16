@@ -30,14 +30,46 @@ export const RegisterPage: React.FC = () => {
     setLoading(true);
 
     try {
+      // Validate required fields
+      if (!name.trim()) {
+        setError('Full name is required.');
+        setLoading(false);
+        return;
+      }
+      if (!email.trim()) {
+        setError('Email is required.');
+        setLoading(false);
+        return;
+      }
+      if (!password || password.length < 6) {
+        setError('Password must be at least 6 characters.');
+        setLoading(false);
+        return;
+      }
+      if (!studentId.trim()) {
+        setError('Student ID is required.');
+        setLoading(false);
+        return;
+      }
+      if (!department.trim()) {
+        setError('Department is required.');
+        setLoading(false);
+        return;
+      }
+      if (!semester || semester < 1 || semester > 8) {
+        setError('Semester must be between 1 and 8.');
+        setLoading(false);
+        return;
+      }
+
       const res = await register({
-        name,
-        email,
+        name: name.trim(),
+        email: email.trim(),
         password,
         role: 'STUDENT',
-        studentId: studentId || `ADX-${Math.floor(1000 + Math.random() * 9000)}`,
-        department,
-        semester,
+        studentId: studentId.trim(),
+        department: department.trim(),
+        semester: Number(semester),
       });
 
       if (res.success) {
