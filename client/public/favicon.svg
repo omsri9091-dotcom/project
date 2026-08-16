@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <defs>
+    <linearGradient id="brandGrad" x1="0" y1="64" x2="64" y2="0" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#4F46E5"/>
+      <stop offset="0.5" stop-color="#6366F1"/>
+      <stop offset="1" stop-color="#06B6D4"/>
+    </linearGradient>
+    <linearGradient id="accentGrad" x1="20" y1="44" x2="44" y2="20" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#10B981"/>
+      <stop offset="1" stop-color="#6366F1"/>
+    </linearGradient>
+  </defs>
+  <!-- Background rounded hexagon -->
+  <rect width="64" height="64" rx="16" fill="#0D1527"/>
+  <rect width="62" height="62" x="1" y="1" rx="15" stroke="url(#brandGrad)" stroke-width="2" stroke-opacity="0.4"/>
+  
+  <!-- Stylized Geometric "A" with Growth Arrow & AI Node -->
+  <!-- Left Leg -->
+  <path d="M16 48L32 14L38 26" stroke="url(#brandGrad)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Right Leg -->
+  <path d="M48 48L32 14" stroke="url(#brandGrad)" stroke-width="5" stroke-linecap="round"/>
+  <!-- Crossbar with growth surge -->
+  <path d="M22 36H42" stroke="url(#accentGrad)" stroke-width="4.5" stroke-linecap="round"/>
+  <!-- Growth Node -->
+  <circle cx="32" cy="14" r="4.5" fill="#06B6D4"/>
+  <circle cx="32" cy="14" r="2" fill="#FFFFFF"/>
+</svg>

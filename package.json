@@ -1,0 +1,26 @@
+{
+  "name": "adexa-ai-platform",
+  "version": "1.0.0",
+  "description": "ADEXA AI - Student Performance Prediction & Early Intervention System",
+  "private": true,
+  "scripts": {
+    "dev:client": "npm --prefix client run dev",
+    "dev:server": "npm --prefix server run dev",
+    "build:client": "npm --prefix client run build",
+    "build:server": "npm --prefix server run build",
+    "build": "npm run build:server && npm run build:client",
+    "seed": "npm --prefix server run seed"
+  },
+  "keywords": [
+    "adexa-ai",
+    "student-performance-prediction",
+    "explainable-ai",
+    "early-intervention",
+    "machine-learning",
+    "fastapi",
+    "express",
+    "react"
+  ],
+  "author": "ADEXA AI Team",
+  "license": "MIT"
+}

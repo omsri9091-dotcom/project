@@ -1,0 +1,83 @@
+{
+  "accuracy": 0.758,
+  "precision": 0.7666,
+  "recall": 0.758,
+  "f1_score": 0.7444,
+  "confusion_matrix": [
+    [
+      8,
+      20,
+      0,
+      0
+    ],
+    [
+      2,
+      201,
+      36,
+      0
+    ],
+    [
+      0,
+      52,
+      169,
+      0
+    ],
+    [
+      0,
+      0,
+      11,
+      1
+    ]
+  ],
+  "classes": [
+    "Poor",
+    "Average",
+    "Good",
+    "Excellent"
+  ],
+  "feature_importances": [
+    {
+      "name": "previous_marks",
+      "importance": 0.1902
+    },
+    {
+      "name": "study_hours",
+      "importance": 0.1557
+    },
+    {
+      "name": "backlogs",
+      "importance": 0.1527
+    },
+    {
+      "name": "attendance",
+      "importance": 0.1354
+    },
+    {
+      "name": "internal_marks",
+      "importance": 0.1253
+    },
+    {
+      "name": "assignment_score",
+      "importance": 0.1085
+    },
+    {
+      "name": "previous_gpa",
+      "importance": 0.0904
+    },
+    {
+      "name": "participation",
+      "importance": 0.0418
+    }
+  ],
+  "sample_count": 2500,
+  "features": [
+    "attendance",
+    "study_hours",
+    "previous_marks",
+    "assignment_score",
+    "internal_marks",
+    "previous_gpa",
+    "participation",
+    "backlogs"
+  ]
+}
