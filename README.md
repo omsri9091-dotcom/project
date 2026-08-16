@@ -272,5 +272,4 @@ The database seed configuration creates pre-configured demo accounts covering di
 
 ## 10. License
 
-This project is built for the **IBM Project Evaluation** under the MIT License.  
 © 2026 ADEXA AI. All rights reserved.
