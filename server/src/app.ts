@@ -13,7 +13,7 @@ import { errorHandler } from './middleware/errorHandler.middleware';
 
 const app: Application = express();
 
-const allowedOrigins = (process.env.ALLOWED_ORIGINS || process.env.CLIENT_ORIGIN || 'http://localhost:5173,http://localhost:5500,http://localhost:3000')
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || process.env.CLIENT_ORIGIN || 'https://adexa-ai-new.vercel.app,http://localhost:5173,http://localhost:5500,http://localhost:3000')
   .split(',')
   .map((origin) => origin.trim())
   .filter(Boolean);
@@ -22,7 +22,8 @@ const allowedOrigins = (process.env.ALLOWED_ORIGINS || process.env.CLIENT_ORIGIN
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin)) {
+      const isADEXAVercelDeployment = /^https:\/\/adexa-ai(?:-new)?(?:-[a-z0-9]+-omsri9091-dotcoms-projects)?\.vercel\.app$/i.test(origin || '');
+      if (!origin || allowedOrigins.includes(origin) || isADEXAVercelDeployment) {
         callback(null, true);
         return;
       }

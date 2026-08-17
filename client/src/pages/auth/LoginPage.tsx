@@ -8,15 +8,13 @@ import {
   ArrowRight,
   Shield,
   GraduationCap,
-  Sparkles,
   AlertCircle,
-  CheckCircle,
 } from 'lucide-react';
 
 export const LoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState<'ADMIN' | 'STUDENT'>('ADMIN');
+  const [role, setRole] = useState<'ADMIN' | 'STUDENT'>('STUDENT');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
@@ -43,13 +41,6 @@ export const LoginPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const fillDemo = (demoEmail: string, demoPass: string, demoRole: 'ADMIN' | 'STUDENT') => {
-    setEmail(demoEmail);
-    setPassword(demoPass);
-    setRole(demoRole);
-    setError(null);
   };
 
   return (
@@ -172,52 +163,6 @@ export const LoginPage: React.FC = () => {
               )}
             </button>
           </form>
-
-          {/* Quick Demo Credentials Auto-Fill Section for Evaluators */}
-          <div className="mt-6 pt-5 border-t border-slate-800/80">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2 flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
-              <span>IBM Evaluator 1-Click Quick Fill:</span>
-            </p>
-
-            <div className="grid grid-cols-2 gap-2 text-[11px]">
-              <button
-                type="button"
-                onClick={() => fillDemo('admin@adexa.ai', 'Admin@12345', 'ADMIN')}
-                className="p-2 rounded-lg bg-slate-900/90 border border-slate-700/70 hover:border-purple-500/50 text-left text-purple-300 font-medium hover:bg-purple-950/20 transition-all"
-              >
-                <div className="font-bold">Faculty Admin</div>
-                <div className="text-[10px] text-slate-400">admin@adexa.ai</div>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => fillDemo('rahul.sharma@adexa.ai', 'Student@12345', 'STUDENT')}
-                className="p-2 rounded-lg bg-slate-900/90 border border-slate-700/70 hover:border-emerald-500/50 text-left text-emerald-300 font-medium hover:bg-emerald-950/20 transition-all"
-              >
-                <div className="font-bold">High Performer</div>
-                <div className="text-[10px] text-slate-400">rahul.sharma@adexa.ai</div>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => fillDemo('amit.kumar@adexa.ai', 'Student@12345', 'STUDENT')}
-                className="p-2 rounded-lg bg-slate-900/90 border border-slate-700/70 hover:border-amber-500/50 text-left text-amber-300 font-medium hover:bg-amber-950/20 transition-all"
-              >
-                <div className="font-bold">At-Risk Student</div>
-                <div className="text-[10px] text-slate-400">amit.kumar@adexa.ai</div>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => fillDemo('neha.singh@adexa.ai', 'Student@12345', 'STUDENT')}
-                className="p-2 rounded-lg bg-slate-900/90 border border-slate-700/70 hover:border-rose-500/50 text-left text-rose-300 font-medium hover:bg-rose-950/20 transition-all"
-              >
-                <div className="font-bold">Critical Risk</div>
-                <div className="text-[10px] text-slate-400">neha.singh@adexa.ai</div>
-              </button>
-            </div>
-          </div>
 
           <div className="mt-6 text-center text-xs text-slate-400">
             Don't have an account?{' '}

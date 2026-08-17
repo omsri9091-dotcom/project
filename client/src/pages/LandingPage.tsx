@@ -84,11 +84,6 @@ export const LandingPage: React.FC = () => {
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[350px] bg-indigo-600/15 blur-[120px] rounded-full pointer-events-none" />
         <div className="absolute top-1/3 left-1/4 w-[300px] h-[200px] bg-cyan-500/10 blur-[100px] rounded-full pointer-events-none" />
 
-        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 text-xs font-semibold tracking-wide uppercase mb-6 animate-pulse-subtle">
-          <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
-          <span>Full Stack ML Architecture • Intelligent Performance Prediction</span>
-        </div>
-
         <h1 className="text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight text-white max-w-5xl mx-auto leading-[1.1]">
           ADEXA <span className="gradient-hero">AI</span>
         </h1>
