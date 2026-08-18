@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import mongoose from 'mongoose';
 import axios from 'axios';
 import { Prediction } from '../models/Prediction';
 import { Student } from '../models/Student';
@@ -219,12 +220,30 @@ export const runPrediction = async (req: AuthRequest, res: Response): Promise<vo
   }
 };
 
-export const getStudentPredictions = async (req: Request, res: Response): Promise<void> => {
+export const getStudentPredictions = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { studentId } = req.params;
-    const predictions = await Prediction.find({
-      $or: [{ studentId }, { studentCode: studentId.toUpperCase() }],
-    }).sort({ createdAt: -1 });
+    let query: any = {};
+
+    if (studentId === 'me' && req.user) {
+      const student = await Student.findOne({
+        $or: [{ userId: req.user._id }, { email: req.user.email }],
+      });
+      if (student) {
+        query = { studentId: student._id };
+      } else {
+        res.status(200).json({ success: true, data: [] });
+        return;
+      }
+    } else if (mongoose.Types.ObjectId.isValid(studentId)) {
+      query = {
+        $or: [{ studentId: new mongoose.Types.ObjectId(studentId) }, { studentCode: studentId.toUpperCase() }],
+      };
+    } else {
+      query = { studentCode: studentId.toUpperCase() };
+    }
+
+    const predictions = await Prediction.find(query).sort({ createdAt: -1 });
 
     res.status(200).json({
       success: true,

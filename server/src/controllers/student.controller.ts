@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import mongoose from 'mongoose';
 import { Student } from '../models/Student';
 import { Prediction } from '../models/Prediction';
 import { Recommendation } from '../models/Recommendation';
@@ -78,17 +79,16 @@ export const getStudentById = async (req: AuthRequest, res: Response): Promise<v
   try {
     const { id } = req.params;
 
-    // RBAC: If student role, ensure they can only view their own profile
+    // RBAC: If student role or 'me', ensure they view their own profile
     let student = null;
-    if (req.user?.role === 'STUDENT') {
-      const orList: any[] = [{ userId: req.user._id }, { email: req.user.email }];
-      if (req.user.studentId) orList.push({ studentId: req.user.studentId });
-      student = await Student.findOne({ _id: id, $or: orList });
-      if (!student) {
-        student = await Student.findOne({ $or: orList });
-      }
-    } else {
+    if (req.user?.role === 'STUDENT' || id === 'me') {
+      const orList: any[] = [{ userId: req.user?._id }, { email: req.user?.email }];
+      if (req.user?.studentId) orList.push({ studentId: req.user.studentId });
+      student = await Student.findOne({ $or: orList });
+    } else if (mongoose.Types.ObjectId.isValid(id)) {
       student = await Student.findById(id);
+    } else {
+      student = await Student.findOne({ studentId: id.toUpperCase() });
     }
 
     if (!student) {
