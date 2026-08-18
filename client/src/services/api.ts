@@ -10,10 +10,11 @@ import {
   AnalyticsOverview,
 } from '../types';
 
+const configuredApiUrl = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL;
 const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL ||
-  import.meta.env.VITE_API_URL ||
-  'https://adexa-ai-production.up.railway.app/api';
+  configuredApiUrl?.startsWith('https://')
+    ? configuredApiUrl
+    : 'https://adexa-ai-production.up.railway.app/api';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
