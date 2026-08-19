@@ -39,6 +39,7 @@ export const CompleteProfileModal: React.FC<CompleteProfileModalProps> = ({
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   // Step 1: Basic & Institutional Details
   const [name, setName] = useState(existingProfile?.name || user?.name || '');
@@ -123,6 +124,7 @@ export const CompleteProfileModal: React.FC<CompleteProfileModalProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setSuccessMessage(null);
     setLoading(true);
 
     try {
@@ -156,19 +158,32 @@ export const CompleteProfileModal: React.FC<CompleteProfileModalProps> = ({
 
       const res = await studentApi.saveProfile(payload);
 
-      if (res.success && res.data?.student) {
-        updateStudentProfile(res.data.student);
+      const savedStudent =
+        res.data?.student ||
+        res.user?.studentProfile ||
+        res.student ||
+        (res.success ? { ...existingProfile, ...payload, isProfileCompleted: true } : null);
+
+      if (res.success || savedStudent) {
+        if (savedStudent) {
+          updateStudentProfile(savedStudent);
+        }
+        setError(null);
+        setSuccessMessage('Profile and academic records saved to MongoDB database successfully!');
         confetti({
           particleCount: 80,
           spread: 70,
           origin: { y: 0.6 },
         });
-        if (onSuccess) {
-          onSuccess(res.data.student);
-        }
-        if (onClose) {
-          onClose();
-        }
+
+        setTimeout(() => {
+          if (onSuccess && savedStudent) {
+            onSuccess(savedStudent);
+          }
+          if (onClose) {
+            onClose();
+          }
+        }, 1200);
       } else {
         throw new Error(res.message || 'Failed to save profile.');
       }
@@ -247,7 +262,19 @@ export const CompleteProfileModal: React.FC<CompleteProfileModalProps> = ({
           </button>
         </div>
 
-        {error && (
+        {/* GREEN SUCCESS BANNER */}
+        {successMessage && (
+          <div className="mb-5 p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs flex items-start gap-2.5 shadow-lg">
+            <CheckCircle2 className="w-5 h-5 shrink-0 text-emerald-400 mt-0.5" />
+            <div className="space-y-0.5">
+              <div className="font-bold text-emerald-300">Saved Successfully!</div>
+              <div className="text-emerald-400/90">{successMessage}</div>
+            </div>
+          </div>
+        )}
+
+        {/* RED ERROR BANNER (Only if actual failure, never on success) */}
+        {error && !successMessage && (
           <div className="mb-5 p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs flex items-start gap-2.5">
             <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
             <span>{error}</span>

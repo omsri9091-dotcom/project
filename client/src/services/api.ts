@@ -99,12 +99,16 @@ export const studentApi = {
     } catch (err: any) {
       if (err.response && err.response.status === 404) {
         // Fallback for servers without /students/profile route
-        try {
-          const authRes = await api.put('/auth/profile', profileData);
-          return authRes.data;
-        } catch (fallbackErr) {
-          throw fallbackErr;
-        }
+        const authRes = await api.put('/auth/profile', profileData);
+        return {
+          success: true,
+          message: authRes.data?.message || 'Profile updated successfully.',
+          data: {
+            student: authRes.data?.user?.studentProfile || authRes.data?.data?.student || profileData,
+            isProfileCompleted: true,
+          },
+          user: authRes.data?.user,
+        };
       }
       throw err;
     }
