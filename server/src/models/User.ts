@@ -6,9 +6,11 @@ export interface IUser extends Document {
   password?: string;
   role: 'ADMIN' | 'STUDENT';
   studentId?: string;
+  college?: string;
   department?: string;
   semester?: number;
   profileImage?: string;
+  isProfileCompleted: boolean;
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -21,9 +23,11 @@ const UserSchema = new Schema<IUser>(
     password: { type: String, required: true },
     role: { type: String, enum: ['ADMIN', 'STUDENT'], default: 'STUDENT' },
     studentId: { type: String, trim: true, unique: true, sparse: true },
+    college: { type: String, default: '' },
     department: { type: String, default: 'Computer Science' },
     semester: { type: Number, default: 1 },
     profileImage: { type: String, default: '' },
+    isProfileCompleted: { type: Boolean, default: false },
     isActive: { type: Boolean, default: true },
   },
   { timestamps: true }

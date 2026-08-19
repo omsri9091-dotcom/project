@@ -57,6 +57,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       studentId: sId,
       department,
       semester: semesterNum,
+      isProfileCompleted: false,
     });
 
     let studentProfile = null;
@@ -68,17 +69,20 @@ export const register = async (req: Request, res: Response): Promise<void> => {
         email: user.email,
         department: department,
         semester: semesterNum,
-        attendance: 75,
-        studyHours: 3.5,
-        previousMarks: 72,
-        assignmentScore: 78,
-        internalMarks: 74,
-        previousGPA: 7.2,
-        participation: 7,
+        isProfileCompleted: false,
+        attendance: 0,
+        studyHours: 0,
+        previousMarks: 0,
+        assignmentScore: 0,
+        internalMarks: 0,
+        previousGPA: 0,
+        participation: 5,
         backlogs: 0,
-        currentGPA: 7.4,
-        performanceScore: 72,
-        performanceLevel: 'Good',
+        currentGPA: 0,
+        subjects: [],
+        semesterHistory: [],
+        performanceScore: 0,
+        performanceLevel: 'Average',
         riskLevel: 'Low',
       });
     }
@@ -101,6 +105,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
         studentId: user.studentId,
         department: user.department,
         semester: user.semester,
+        isProfileCompleted: false,
         studentProfile,
       },
     });
@@ -151,6 +156,10 @@ export const login = async (req: Request, res: Response): Promise<void> => {
         queryList.push({ studentId: user.studentId });
       }
       studentProfile = await Student.findOne({ $or: queryList });
+      if (studentProfile && !studentProfile.userId) {
+        studentProfile.userId = user._id;
+        await studentProfile.save();
+      }
     }
 
     const token = jwt.sign(
@@ -169,8 +178,10 @@ export const login = async (req: Request, res: Response): Promise<void> => {
         email: user.email,
         role: user.role,
         studentId: user.studentId,
+        college: user.college,
         department: user.department,
         semester: user.semester,
+        isProfileCompleted: studentProfile ? studentProfile.isProfileCompleted : user.isProfileCompleted,
         studentProfile,
       },
     });
@@ -193,6 +204,10 @@ export const getMe = async (req: AuthRequest, res: Response): Promise<void> => {
         queryList.push({ studentId: req.user.studentId });
       }
       studentProfile = await Student.findOne({ $or: queryList });
+      if (studentProfile && !studentProfile.userId) {
+        studentProfile.userId = req.user._id;
+        await studentProfile.save();
+      }
     }
 
     res.status(200).json({
@@ -203,9 +218,11 @@ export const getMe = async (req: AuthRequest, res: Response): Promise<void> => {
         email: req.user.email,
         role: req.user.role,
         studentId: req.user.studentId,
+        college: req.user.college,
         department: req.user.department,
         semester: req.user.semester,
         profileImage: req.user.profileImage,
+        isProfileCompleted: studentProfile ? studentProfile.isProfileCompleted : req.user.isProfileCompleted,
         studentProfile,
       },
     });
@@ -221,7 +238,7 @@ export const updateProfile = async (req: AuthRequest, res: Response): Promise<vo
       return;
     }
 
-    const { name, department, semester, profileImage } = req.body;
+    const { name, college, department, semester, profileImage } = req.body;
     const user = await User.findById(req.user._id);
 
     if (!user) {
@@ -230,6 +247,7 @@ export const updateProfile = async (req: AuthRequest, res: Response): Promise<vo
     }
 
     if (name) user.name = name;
+    if (college !== undefined) user.college = college;
     if (department) user.department = department;
     if (semester) user.semester = Number(semester);
     if (profileImage !== undefined) user.profileImage = profileImage;
@@ -239,7 +257,7 @@ export const updateProfile = async (req: AuthRequest, res: Response): Promise<vo
     if (user.role === 'STUDENT') {
       await Student.findOneAndUpdate(
         { $or: [{ userId: user._id }, { email: user.email }] },
-        { name: user.name, department: user.department, semester: user.semester }
+        { name: user.name, college: user.college, department: user.department, semester: user.semester }
       );
     }
 
@@ -252,9 +270,11 @@ export const updateProfile = async (req: AuthRequest, res: Response): Promise<vo
         email: user.email,
         role: user.role,
         studentId: user.studentId,
+        college: user.college,
         department: user.department,
         semester: user.semester,
         profileImage: user.profileImage,
+        isProfileCompleted: user.isProfileCompleted,
       },
     });
   } catch (error: any) {

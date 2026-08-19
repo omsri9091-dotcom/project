@@ -27,8 +27,10 @@ export const chatWithAssistant = async (req: AuthRequest, res: Response): Promis
       ? {
           name: student.name,
           studentId: student.studentId,
+          college: student.college,
           department: student.department,
           semester: student.semester,
+          isProfileCompleted: student.isProfileCompleted,
           attendance: student.attendance,
           studyHours: student.studyHours,
           previousMarks: student.previousMarks,
@@ -37,6 +39,7 @@ export const chatWithAssistant = async (req: AuthRequest, res: Response): Promis
           currentGPA: student.currentGPA,
           previousGPA: student.previousGPA,
           backlogs: student.backlogs,
+          subjects: student.subjects || [],
           performanceScore: student.performanceScore,
           performanceLevel: student.performanceLevel,
           riskLevel: student.riskLevel,
@@ -50,7 +53,7 @@ export const chatWithAssistant = async (req: AuthRequest, res: Response): Promis
 Student Profile:
 ${JSON.stringify(studentContext, null, 2)}
 
-Provide clear, actionable, evidence-based academic mentoring. Format responses with clean markdown bullet points, bold key steps, and constructive encouragement.`;
+Provide clear, actionable, evidence-based academic mentoring tailored specifically to this student's recorded subjects, marks, and habits. Format responses with clean markdown bullet points, bold key steps, and constructive encouragement.`;
 
         const messages = [
           { role: 'system', content: systemPrompt },

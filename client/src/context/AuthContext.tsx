@@ -11,8 +11,11 @@ interface AuthContextType {
   register: (userData: any) => Promise<any>;
   logout: () => void;
   updateUser: (updatedUser: Partial<User>) => void;
+  setStudentProfile: (profile: Student | null) => void;
+  updateStudentProfile: (profile: Student) => void;
   isAdmin: boolean;
   isStudent: boolean;
+  isProfileCompleted: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -63,6 +66,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(res.user);
         if (res.user.studentProfile) {
           setStudentProfile(res.user.studentProfile);
+        } else {
+          setStudentProfile(null);
         }
         localStorage.setItem('adexa_token', res.token);
         localStorage.setItem('adexa_user', JSON.stringify(res.user));
@@ -82,6 +87,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(res.user);
         if (res.user.studentProfile) {
           setStudentProfile(res.user.studentProfile);
+        } else {
+          setStudentProfile(null);
         }
         localStorage.setItem('adexa_token', res.token);
         localStorage.setItem('adexa_user', JSON.stringify(res.user));
@@ -108,6 +115,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const updateStudentProfile = (profile: Student) => {
+    setStudentProfile(profile);
+    if (user) {
+      const updatedUser = {
+        ...user,
+        isProfileCompleted: profile.isProfileCompleted,
+        studentProfile: profile,
+      };
+      setUser(updatedUser);
+      localStorage.setItem('adexa_user', JSON.stringify(updatedUser));
+    }
+  };
+
+  const isProfileCompleted = Boolean(studentProfile?.isProfileCompleted || user?.isProfileCompleted);
+
   return (
     <AuthContext.Provider
       value={{
@@ -119,8 +141,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         register,
         logout,
         updateUser,
+        setStudentProfile,
+        updateStudentProfile,
         isAdmin: user?.role === 'ADMIN',
         isStudent: user?.role === 'STUDENT',
+        isProfileCompleted,
       }}
     >
       {children}

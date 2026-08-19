@@ -24,12 +24,18 @@ interface ChatMessage {
 }
 
 export const StudentAssistantPage: React.FC = () => {
-  const { user, studentProfile } = useAuth();
+  const { user, studentProfile, isProfileCompleted } = useAuth();
+  const firstName = user?.name?.split(' ')[0] || 'Student';
+
+  const welcomeContent = isProfileCompleted && studentProfile
+    ? `👋 Hello **${firstName}**! I am your **ADEXA AI Academic Assistant**.\n\nI have active context of your academic performance profile (CGPA: **${studentProfile.currentGPA ? studentProfile.currentGPA.toFixed(2) : '0.00'}**, Attendance: **${studentProfile.attendance}%**, Risk Level: **${studentProfile.riskLevel}** across **${studentProfile.subjects?.length || 0} enrolled subjects** in **${studentProfile.department}**).\n\nHow can I help guide your academic journey today?`
+    : `👋 Hello **${firstName}**! I am your **ADEXA AI Academic Assistant**.\n\nI am ready to guide your course revision, study strategies, and exam preparation. **Tip:** Complete your student profile to unlock deep personalized advice based on your exact marks and subjects!\n\nHow can I help you today?`;
+
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: 'welcome',
       role: 'assistant',
-      content: `👋 Hello **${user?.name?.split(' ')[0] || 'Student'}**! I am your **ADEXA AI Academic Assistant**.\n\nI have active context of your academic performance profile (GPA: **${studentProfile?.currentGPA || 7.5}**, Attendance: **${studentProfile?.attendance || 82}%**, Risk Level: **${studentProfile?.riskLevel || 'Low'}**).\n\nHow can I help guide your academic journey today?`,
+      content: welcomeContent,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       provider: 'ADEXA Context Engine',
     },
@@ -39,7 +45,7 @@ export const StudentAssistantPage: React.FC = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const suggestedPrompts = [
-    { label: 'Why is my performance evaluated as ' + (studentProfile?.performanceLevel || 'Good') + '?', icon: HelpCircle },
+    { label: 'Why is my performance evaluated as ' + (studentProfile?.performanceLevel || 'Average') + '?', icon: HelpCircle },
     { label: 'How can I improve my GPA this semester?', icon: TrendingUp },
     { label: 'What should I focus on this month?', icon: Zap },
     { label: 'Create an optimized study timetable for me.', icon: Calendar },

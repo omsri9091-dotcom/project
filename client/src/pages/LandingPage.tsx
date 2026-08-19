@@ -21,9 +21,9 @@ import {
 
 export const LandingPage: React.FC = () => {
   // Interactive Simulator State for live evaluator trial
-  const [simAttendance, setSimAttendance] = useState(82);
-  const [simStudyHours, setSimStudyHours] = useState(4.0);
-  const [simPreviousMarks, setSimPreviousMarks] = useState(76);
+  const [simAttendance, setSimAttendance] = useState(83);
+  const [simStudyHours, setSimStudyHours] = useState(5.0);
+  const [simPreviousMarks, setSimPreviousMarks] = useState(90);
   const [simBacklogs, setSimBacklogs] = useState(0);
 
   const calculateSimScore = () => {

@@ -1,12 +1,27 @@
+export interface SubjectItem {
+  name: string;
+  score: number;
+  attendance?: number;
+  internalMarks?: number;
+}
+
+export interface SemesterRecord {
+  semester: string;
+  gpa: number;
+  attendance: number;
+}
+
 export interface User {
   id: string;
   name: string;
   email: string;
   role: 'ADMIN' | 'STUDENT';
   studentId?: string;
+  college?: string;
   department?: string;
   semester?: number;
   profileImage?: string;
+  isProfileCompleted?: boolean;
   isActive?: boolean;
   studentProfile?: Student;
 }
@@ -17,8 +32,12 @@ export interface Student {
   studentId: string;
   name: string;
   email: string;
+  college?: string;
   department: string;
+  year?: number;
   semester: number;
+  section?: string;
+  isProfileCompleted: boolean;
   attendance: number;
   studyHours: number;
   previousMarks: number;
@@ -28,6 +47,8 @@ export interface Student {
   participation: number;
   backlogs: number;
   currentGPA: number;
+  subjects: SubjectItem[];
+  semesterHistory: SemesterRecord[];
   performanceScore: number;
   performanceLevel: 'Poor' | 'Average' | 'Good' | 'Excellent';
   riskLevel: 'Low' | 'Medium' | 'High';

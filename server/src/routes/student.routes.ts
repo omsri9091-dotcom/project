@@ -2,6 +2,8 @@ import { Router } from 'express';
 import {
   getStudents,
   getStudentById,
+  getMyProfile,
+  saveMyProfile,
   createStudent,
   updateStudent,
   deleteStudent,
@@ -19,6 +21,12 @@ router.get('/export/csv', requireAdmin, exportStudentsCSV);
 
 // List all students (Admin only)
 router.get('/', requireAdmin, getStudents);
+
+// Authenticated student's own profile routes
+router.get('/me', getMyProfile);
+router.get('/profile', getMyProfile);
+router.post('/profile', saveMyProfile);
+router.put('/profile', saveMyProfile);
 
 // Get student by ID (Admin or the student themselves)
 router.get('/:id', getStudentById);

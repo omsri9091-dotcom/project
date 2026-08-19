@@ -12,9 +12,10 @@ import {
 
 const configuredApiUrl = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL;
 const API_BASE_URL =
-  configuredApiUrl?.startsWith('https://')
-    ? configuredApiUrl
-    : 'https://adexa-ai-production.up.railway.app/api';
+  configuredApiUrl ||
+  (typeof window !== 'undefined' && window.location.hostname === 'localhost'
+    ? 'http://localhost:5000/api'
+    : 'https://adexa-ai-production.up.railway.app/api');
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -68,6 +69,14 @@ export const authApi = {
 
 /* Student API */
 export const studentApi = {
+  getMyProfile: async () => {
+    const res = await api.get('/students/me');
+    return res.data;
+  },
+  saveProfile: async (profileData: any) => {
+    const res = await api.post('/students/profile', profileData);
+    return res.data;
+  },
   getStudents: async (params?: any) => {
     const res = await api.get('/students', { params });
     return res.data;
