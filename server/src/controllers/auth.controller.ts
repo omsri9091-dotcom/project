@@ -238,28 +238,123 @@ export const updateProfile = async (req: AuthRequest, res: Response): Promise<vo
       return;
     }
 
-    const { name, college, department, semester, profileImage } = req.body;
-    const user = await User.findById(req.user._id);
+    const {
+      name,
+      studentId,
+      college,
+      department,
+      year,
+      semester,
+      section,
+      profileImage,
+      attendance,
+      studyHours,
+      previousMarks,
+      assignmentScore,
+      internalMarks,
+      previousGPA,
+      currentGPA,
+      participation,
+      backlogs,
+      subjects,
+    } = req.body;
 
+    const user = await User.findById(req.user._id);
     if (!user) {
       res.status(404).json({ success: false, message: 'User not found.' });
       return;
     }
 
     if (name) user.name = name;
+    if (studentId) user.studentId = studentId.toUpperCase();
     if (college !== undefined) user.college = college;
     if (department) user.department = department;
     if (semester) user.semester = Number(semester);
     if (profileImage !== undefined) user.profileImage = profileImage;
 
-    await user.save();
+    let studentProfile = null;
 
     if (user.role === 'STUDENT') {
-      await Student.findOneAndUpdate(
-        { $or: [{ userId: user._id }, { email: user.email }] },
-        { name: user.name, college: user.college, department: user.department, semester: user.semester }
-      );
+      let student = await Student.findOne({
+        $or: [{ userId: user._id }, { email: user.email }],
+      });
+
+      if (!student) {
+        student = new Student({
+          userId: user._id,
+          studentId: user.studentId || `ADX-${Math.floor(1000 + Math.random() * 9000)}`,
+          email: user.email,
+        });
+      }
+
+      student.userId = user._id;
+      student.name = user.name;
+      student.college = user.college;
+      student.department = user.department;
+      student.semester = user.semester;
+      if (studentId) student.studentId = studentId.toUpperCase();
+      if (year) student.year = Number(year);
+      if (section !== undefined) student.section = section;
+
+      if (attendance !== undefined || currentGPA !== undefined || previousMarks !== undefined) {
+        student.isProfileCompleted = true;
+        user.isProfileCompleted = true;
+      }
+
+      if (attendance !== undefined) student.attendance = Number(attendance);
+      if (studyHours !== undefined) student.studyHours = Number(studyHours);
+      if (previousMarks !== undefined) student.previousMarks = Number(previousMarks);
+      if (assignmentScore !== undefined) student.assignmentScore = Number(assignmentScore);
+      if (internalMarks !== undefined) student.internalMarks = Number(internalMarks);
+      if (previousGPA !== undefined) student.previousGPA = Number(previousGPA);
+      if (currentGPA !== undefined) student.currentGPA = Number(currentGPA);
+      if (participation !== undefined) student.participation = Number(participation);
+      if (backlogs !== undefined) student.backlogs = Number(backlogs);
+
+      if (Array.isArray(subjects)) {
+        student.subjects = subjects.map((sub: any) => ({
+          name: String(sub.name).trim(),
+          score: Number(sub.score) || 0,
+          attendance: sub.attendance !== undefined ? Number(sub.attendance) : student.attendance,
+          internalMarks: sub.internalMarks !== undefined ? Number(sub.internalMarks) : student.internalMarks,
+        }));
+      }
+
+      // Re-evaluate score & risk
+      const att = student.attendance;
+      const sh = student.studyHours;
+      const pm = student.previousMarks;
+      const as = student.assignmentScore;
+      const im = student.internalMarks;
+      const pgpa = student.previousGPA;
+      const part = student.participation;
+      const bl = student.backlogs;
+
+      student.performanceScore = Math.min(100, Math.max(0, Math.round(
+        0.20 * att +
+        0.16 * (Math.min(sh, 8.5) / 8.5 * 100) +
+        0.22 * pm +
+        0.14 * as +
+        0.16 * im +
+        0.08 * (pgpa * 10) +
+        0.04 * (part * 10) -
+        4.0 * bl
+      )));
+
+      if (student.performanceScore >= 80) student.performanceLevel = 'Excellent';
+      else if (student.performanceScore >= 65) student.performanceLevel = 'Good';
+      else if (student.performanceScore >= 50) student.performanceLevel = 'Average';
+      else student.performanceLevel = 'Poor';
+
+      if (student.performanceLevel === 'Poor' || bl >= 2 || att < 65) student.riskLevel = 'High';
+      else if (student.performanceLevel === 'Average' || att < 75 || bl === 1) student.riskLevel = 'Medium';
+      else student.riskLevel = 'Low';
+
+      await student.save();
+      studentProfile = student;
     }
+
+    await user.save();
 
     res.status(200).json({
       success: true,
@@ -274,6 +369,11 @@ export const updateProfile = async (req: AuthRequest, res: Response): Promise<vo
         department: user.department,
         semester: user.semester,
         profileImage: user.profileImage,
+        isProfileCompleted: user.isProfileCompleted,
+        studentProfile,
+      },
+      data: {
+        student: studentProfile,
         isProfileCompleted: user.isProfileCompleted,
       },
     });

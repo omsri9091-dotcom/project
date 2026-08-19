@@ -70,20 +70,70 @@ export const authApi = {
 /* Student API */
 export const studentApi = {
   getMyProfile: async () => {
-    const res = await api.get('/students/me');
-    return res.data;
+    try {
+      const res = await api.get('/students/me');
+      return res.data;
+    } catch (err: any) {
+      if (err.response && err.response.status === 404) {
+        // Fallback for legacy route deployments
+        const authRes = await api.get('/auth/me');
+        if (authRes.data && authRes.data.user) {
+          return {
+            success: true,
+            data: {
+              student: authRes.data.user.studentProfile || null,
+              isProfileCompleted: Boolean(authRes.data.user.isProfileCompleted),
+              predictions: [],
+              recommendations: [],
+            },
+          };
+        }
+      }
+      throw err;
+    }
   },
   saveProfile: async (profileData: any) => {
-    const res = await api.post('/students/profile', profileData);
-    return res.data;
+    try {
+      const res = await api.post('/students/profile', profileData);
+      return res.data;
+    } catch (err: any) {
+      if (err.response && err.response.status === 404) {
+        // Fallback for servers without /students/profile route
+        try {
+          const authRes = await api.put('/auth/profile', profileData);
+          return authRes.data;
+        } catch (fallbackErr) {
+          throw fallbackErr;
+        }
+      }
+      throw err;
+    }
   },
   getStudents: async (params?: any) => {
     const res = await api.get('/students', { params });
     return res.data;
   },
   getStudentById: async (id: string) => {
-    const res = await api.get(`/students/${id}`);
-    return res.data;
+    try {
+      const res = await api.get(`/students/${id}`);
+      return res.data;
+    } catch (err: any) {
+      if (err.response && err.response.status === 404 && id === 'me') {
+        const authRes = await api.get('/auth/me');
+        if (authRes.data && authRes.data.user) {
+          return {
+            success: true,
+            data: {
+              student: authRes.data.user.studentProfile || null,
+              isProfileCompleted: Boolean(authRes.data.user.isProfileCompleted),
+              predictions: [],
+              recommendations: [],
+            },
+          };
+        }
+      }
+      throw err;
+    }
   },
   createStudent: async (studentData: any) => {
     const res = await api.post('/students', studentData);
