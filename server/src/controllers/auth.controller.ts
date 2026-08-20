@@ -10,27 +10,15 @@ export const register = async (req: Request, res: Response): Promise<void> => {
   try {
     const { name, email, password, role = 'STUDENT', studentId, department, semester } = req.body;
 
-    // Validate all required fields
+    // Validate required fields
     if (!name || !email || !password) {
       res.status(400).json({ success: false, message: 'Please provide all required fields (name, email, password).' });
       return;
     }
 
-    if (!studentId) {
-      res.status(400).json({ success: false, message: 'Student ID is required.' });
-      return;
-    }
-
-    if (!department) {
-      res.status(400).json({ success: false, message: 'Department is required.' });
-      return;
-    }
-
-    const semesterNum = Number(semester);
-    if (!semesterNum || semesterNum < 1 || semesterNum > 8) {
-      res.status(400).json({ success: false, message: 'Semester must be a number between 1 and 8.' });
-      return;
-    }
+    const sId = (studentId && studentId.trim().toUpperCase()) || `ADX-${Math.floor(1000 + Math.random() * 9000)}`;
+    const dept = (department && department.trim()) || 'Computer Science';
+    const semesterNum = Number(semester) || 1;
 
     const existingUser = await User.findOne({ email: email.toLowerCase() });
     if (existingUser) {
@@ -38,12 +26,13 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    // Check if student ID already exists
-    const sId = studentId.toUpperCase();
-    const existingStudentId = await Student.findOne({ studentId: sId });
-    if (existingStudentId) {
-      res.status(400).json({ success: false, message: 'This Student ID is already registered.' });
-      return;
+    // Check if student ID already exists if explicitly provided
+    if (studentId) {
+      const existingStudentId = await Student.findOne({ studentId: sId });
+      if (existingStudentId) {
+        res.status(400).json({ success: false, message: 'This Student ID is already registered.' });
+        return;
+      }
     }
 
     const salt = await bcrypt.genSalt(10);
@@ -55,7 +44,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       password: hashedPassword,
       role: role.toUpperCase() === 'ADMIN' ? 'ADMIN' : 'STUDENT',
       studentId: sId,
-      department,
+      department: dept,
       semester: semesterNum,
       isProfileCompleted: false,
     });
@@ -67,7 +56,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
         studentId: sId,
         name: user.name,
         email: user.email,
-        department: department,
+        department: dept,
         semester: semesterNum,
         isProfileCompleted: false,
         attendance: 0,
