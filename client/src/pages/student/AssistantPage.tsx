@@ -40,6 +40,23 @@ export const StudentAssistantPage: React.FC = () => {
       provider: 'ADEXA Context Engine',
     },
   ]);
+
+  useEffect(() => {
+    setMessages((prev) => {
+      if (prev.length === 1 && prev[0].id === 'welcome') {
+        return [
+          {
+            id: 'welcome',
+            role: 'assistant',
+            content: welcomeContent,
+            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            provider: 'ADEXA Context Engine',
+          },
+        ];
+      }
+      return prev;
+    });
+  }, [studentProfile, isProfileCompleted]);
   const [inputPrompt, setInputPrompt] = useState('');
   const [isThinking, setIsThinking] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -135,9 +152,9 @@ export const StudentAssistantPage: React.FC = () => {
         </div>
 
         <div className="hidden sm:flex items-center gap-3 text-xs font-mono text-slate-400 bg-slate-900/80 px-3 py-1.5 rounded-xl border border-slate-800">
-          <span>GPA: <strong className="text-white">{studentProfile?.currentGPA || 7.5}</strong></span>
+          <span>GPA: <strong className="text-white">{studentProfile?.isProfileCompleted ? Number(studentProfile.currentGPA).toFixed(2) : 'Not Set'}</strong></span>
           <span>•</span>
-          <span>Attendance: <strong className="text-indigo-400">{studentProfile?.attendance || 82}%</strong></span>
+          <span>Attendance: <strong className="text-indigo-400">{studentProfile?.isProfileCompleted ? `${studentProfile.attendance}%` : 'Not Set'}</strong></span>
         </div>
       </div>
 

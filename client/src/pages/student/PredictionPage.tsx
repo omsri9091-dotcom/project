@@ -13,37 +13,42 @@ import {
   Calendar,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 
 export const StudentPredictionPage: React.FC = () => {
-  const [student, setStudent] = useState<Student | null>(null);
+  const { studentProfile, updateStudentProfile } = useAuth();
+  const [student, setStudent] = useState<Student | null>(studentProfile);
   const [prediction, setPrediction] = useState<Prediction | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
 
   // Editable Simulation Parameters
-  const [attendance, setAttendance] = useState<number>(85);
-  const [studyHours, setStudyHours] = useState<number>(4.0);
-  const [previousMarks, setPreviousMarks] = useState<number>(75);
-  const [assignmentScore, setAssignmentScore] = useState<number>(80);
-  const [internalMarks, setInternalMarks] = useState<number>(75);
-  const [previousGPA, setPreviousGPA] = useState<number>(7.5);
-  const [participation, setParticipation] = useState<number>(7);
-  const [backlogs, setBacklogs] = useState<number>(0);
+  const [attendance, setAttendance] = useState<number>(studentProfile?.attendance ?? 80);
+  const [studyHours, setStudyHours] = useState<number>(studentProfile?.studyHours ?? 4.0);
+  const [previousMarks, setPreviousMarks] = useState<number>(studentProfile?.previousMarks ?? 75);
+  const [assignmentScore, setAssignmentScore] = useState<number>(studentProfile?.assignmentScore ?? 80);
+  const [internalMarks, setInternalMarks] = useState<number>(studentProfile?.internalMarks ?? 75);
+  const [previousGPA, setPreviousGPA] = useState<number>(studentProfile?.previousGPA ?? 7.5);
+  const [participation, setParticipation] = useState<number>(studentProfile?.participation ?? 7);
+  const [backlogs, setBacklogs] = useState<number>(studentProfile?.backlogs ?? 0);
 
   useEffect(() => {
     const fetchInitial = async () => {
       try {
-        const res = await studentApi.getStudentById('me');
+        const res = await studentApi.getMyProfile();
         if (res.success && res.data) {
           const s = res.data.student;
-          setStudent(s);
-          setAttendance(s.attendance);
-          setStudyHours(s.studyHours);
-          setPreviousMarks(s.previousMarks);
-          setAssignmentScore(s.assignmentScore);
-          setInternalMarks(s.internalMarks);
-          setPreviousGPA(s.previousGPA);
-          setParticipation(s.participation);
-          setBacklogs(s.backlogs);
+          if (s) {
+            setStudent(s);
+            updateStudentProfile(s);
+            setAttendance(s.attendance ?? 80);
+            setStudyHours(s.studyHours ?? 4.0);
+            setPreviousMarks(s.previousMarks ?? 75);
+            setAssignmentScore(s.assignmentScore ?? 80);
+            setInternalMarks(s.internalMarks ?? 75);
+            setPreviousGPA(s.previousGPA ?? 7.5);
+            setParticipation(s.participation ?? 7);
+            setBacklogs(s.backlogs ?? 0);
+          }
 
           if (res.data.predictions && res.data.predictions.length > 0) {
             setPrediction(res.data.predictions[0]);

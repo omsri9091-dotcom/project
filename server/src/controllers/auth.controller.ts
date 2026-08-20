@@ -151,14 +151,47 @@ export const login = async (req: Request, res: Response): Promise<void> => {
 
     let studentProfile = null;
     if (user.role === 'STUDENT') {
-      const queryList: any[] = [{ userId: user._id }, { email: user.email }];
-      if (user.studentId) {
-        queryList.push({ studentId: user.studentId });
+      studentProfile = await Student.findOne({ userId: user._id });
+      if (!studentProfile) {
+        studentProfile = await Student.findOne({ email: user.email.toLowerCase() });
+        if (studentProfile) {
+          studentProfile.userId = user._id;
+          await studentProfile.save();
+        }
       }
-      studentProfile = await Student.findOne({ $or: queryList });
-      if (studentProfile && !studentProfile.userId) {
-        studentProfile.userId = user._id;
-        await studentProfile.save();
+
+      if (!studentProfile && user.studentId) {
+        studentProfile = await Student.findOne({ studentId: user.studentId });
+        if (studentProfile) {
+          studentProfile.userId = user._id;
+          await studentProfile.save();
+        }
+      }
+
+      if (!studentProfile) {
+        studentProfile = await Student.create({
+          userId: user._id,
+          studentId: user.studentId || `ADX-${Math.floor(1000 + Math.random() * 9000)}`,
+          name: user.name,
+          email: user.email,
+          department: user.department || 'Computer Science',
+          semester: user.semester || 1,
+          isProfileCompleted: false,
+          attendance: 0,
+          studyHours: 0,
+          previousMarks: 0,
+          assignmentScore: 0,
+          internalMarks: 0,
+          previousGPA: 0,
+          participation: 5,
+          backlogs: 0,
+          currentGPA: 0,
+          subjects: [],
+          semesterHistory: [],
+          performanceScore: 0,
+          performanceLevel: 'Average',
+          riskLevel: 'Low',
+        });
       }
     }
 
@@ -199,14 +232,47 @@ export const getMe = async (req: AuthRequest, res: Response): Promise<void> => {
 
     let studentProfile = null;
     if (req.user.role === 'STUDENT') {
-      const queryList: any[] = [{ userId: req.user._id }, { email: req.user.email }];
-      if (req.user.studentId) {
-        queryList.push({ studentId: req.user.studentId });
+      studentProfile = await Student.findOne({ userId: req.user._id });
+      if (!studentProfile) {
+        studentProfile = await Student.findOne({ email: req.user.email.toLowerCase() });
+        if (studentProfile) {
+          studentProfile.userId = req.user._id;
+          await studentProfile.save();
+        }
       }
-      studentProfile = await Student.findOne({ $or: queryList });
-      if (studentProfile && !studentProfile.userId) {
-        studentProfile.userId = req.user._id;
-        await studentProfile.save();
+
+      if (!studentProfile && req.user.studentId) {
+        studentProfile = await Student.findOne({ studentId: req.user.studentId });
+        if (studentProfile) {
+          studentProfile.userId = req.user._id;
+          await studentProfile.save();
+        }
+      }
+
+      if (!studentProfile) {
+        studentProfile = await Student.create({
+          userId: req.user._id,
+          studentId: req.user.studentId || `ADX-${Math.floor(1000 + Math.random() * 9000)}`,
+          name: req.user.name,
+          email: req.user.email,
+          department: req.user.department || 'Computer Science',
+          semester: req.user.semester || 1,
+          isProfileCompleted: false,
+          attendance: 0,
+          studyHours: 0,
+          previousMarks: 0,
+          assignmentScore: 0,
+          internalMarks: 0,
+          previousGPA: 0,
+          participation: 5,
+          backlogs: 0,
+          currentGPA: 0,
+          subjects: [],
+          semesterHistory: [],
+          performanceScore: 0,
+          performanceLevel: 'Average',
+          riskLevel: 'Low',
+        });
       }
     }
 
@@ -265,19 +331,33 @@ export const updateProfile = async (req: AuthRequest, res: Response): Promise<vo
       return;
     }
 
-    if (name) user.name = name;
-    if (studentId) user.studentId = studentId.toUpperCase();
-    if (college !== undefined) user.college = college;
-    if (department) user.department = department;
+    if (studentId && studentId.trim().toUpperCase() !== user.studentId) {
+      const sIdUpper = studentId.trim().toUpperCase();
+      const existingUserWithId = await User.findOne({ studentId: sIdUpper, _id: { $ne: user._id } });
+      const existingStudentWithId = await Student.findOne({ studentId: sIdUpper, userId: { $ne: user._id } });
+      if (existingUserWithId || existingStudentWithId) {
+        res.status(400).json({ success: false, message: 'This Student ID is already in use by another student.' });
+        return;
+      }
+      user.studentId = sIdUpper;
+    }
+
+    if (name && name.trim()) user.name = name.trim();
+    if (college !== undefined) user.college = college.trim();
+    if (department && department.trim()) user.department = department.trim();
     if (semester) user.semester = Number(semester);
     if (profileImage !== undefined) user.profileImage = profileImage;
 
     let studentProfile = null;
 
     if (user.role === 'STUDENT') {
-      let student = await Student.findOne({
-        $or: [{ userId: user._id }, { email: user.email }],
-      });
+      let student = await Student.findOne({ userId: user._id });
+      if (!student) {
+        student = await Student.findOne({ email: user.email.toLowerCase() });
+      }
+      if (!student && user.studentId) {
+        student = await Student.findOne({ studentId: user.studentId });
+      }
 
       if (!student) {
         student = new Student({
@@ -289,35 +369,38 @@ export const updateProfile = async (req: AuthRequest, res: Response): Promise<vo
 
       student.userId = user._id;
       student.name = user.name;
-      student.college = user.college;
-      student.department = user.department;
-      student.semester = user.semester;
-      if (studentId) student.studentId = studentId.toUpperCase();
-      if (year) student.year = Number(year);
-      if (section !== undefined) student.section = section;
+      student.email = user.email;
+      student.studentId = user.studentId || student.studentId;
+      if (college !== undefined) student.college = college.trim();
+      student.department = user.department || 'Computer Science';
+      student.semester = user.semester || 1;
+      if (year !== undefined) student.year = Number(year);
+      if (section !== undefined) student.section = section.trim();
 
       if (attendance !== undefined || currentGPA !== undefined || previousMarks !== undefined) {
         student.isProfileCompleted = true;
         user.isProfileCompleted = true;
       }
 
-      if (attendance !== undefined) student.attendance = Number(attendance);
-      if (studyHours !== undefined) student.studyHours = Number(studyHours);
-      if (previousMarks !== undefined) student.previousMarks = Number(previousMarks);
-      if (assignmentScore !== undefined) student.assignmentScore = Number(assignmentScore);
-      if (internalMarks !== undefined) student.internalMarks = Number(internalMarks);
-      if (previousGPA !== undefined) student.previousGPA = Number(previousGPA);
-      if (currentGPA !== undefined) student.currentGPA = Number(currentGPA);
-      if (participation !== undefined) student.participation = Number(participation);
-      if (backlogs !== undefined) student.backlogs = Number(backlogs);
+      if (attendance !== undefined) student.attendance = Math.min(100, Math.max(0, Number(attendance)));
+      if (studyHours !== undefined) student.studyHours = Math.min(24, Math.max(0, Number(studyHours)));
+      if (previousMarks !== undefined) student.previousMarks = Math.min(100, Math.max(0, Number(previousMarks)));
+      if (assignmentScore !== undefined) student.assignmentScore = Math.min(100, Math.max(0, Number(assignmentScore)));
+      if (internalMarks !== undefined) student.internalMarks = Math.min(100, Math.max(0, Number(internalMarks)));
+      if (previousGPA !== undefined) student.previousGPA = Math.min(10, Math.max(0, Number(previousGPA)));
+      if (currentGPA !== undefined) student.currentGPA = Math.min(10, Math.max(0, Number(currentGPA)));
+      if (participation !== undefined) student.participation = Math.min(10, Math.max(1, Number(participation)));
+      if (backlogs !== undefined) student.backlogs = Math.min(20, Math.max(0, Number(backlogs)));
 
       if (Array.isArray(subjects)) {
-        student.subjects = subjects.map((sub: any) => ({
-          name: String(sub.name).trim(),
-          score: Number(sub.score) || 0,
-          attendance: sub.attendance !== undefined ? Number(sub.attendance) : student.attendance,
-          internalMarks: sub.internalMarks !== undefined ? Number(sub.internalMarks) : student.internalMarks,
-        }));
+        student.subjects = subjects
+          .filter((sub: any) => sub && sub.name && sub.name.trim())
+          .map((sub: any) => ({
+            name: String(sub.name).trim(),
+            score: Math.min(100, Math.max(0, Number(sub.score) || 0)),
+            attendance: sub.attendance !== undefined ? Math.min(100, Math.max(0, Number(sub.attendance))) : student.attendance,
+            internalMarks: sub.internalMarks !== undefined ? Math.min(100, Math.max(0, Number(sub.internalMarks))) : student.internalMarks,
+          }));
       }
 
       // Re-evaluate score & risk

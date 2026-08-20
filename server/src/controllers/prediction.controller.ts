@@ -23,15 +23,20 @@ export const runPrediction = async (req: AuthRequest, res: Response): Promise<vo
     } = req.body;
 
     let targetStudent = null;
-    if (studentId) {
+    if (studentId && req.user?.role === 'ADMIN') {
       targetStudent = await Student.findById(studentId);
       if (!targetStudent) {
         targetStudent = await Student.findOne({ studentId: studentId.toUpperCase() });
       }
     } else if (req.user?.role === 'STUDENT') {
-      targetStudent = await Student.findOne({
-        $or: [{ userId: req.user._id }, { email: req.user.email }],
-      });
+      targetStudent = await Student.findOne({ userId: req.user._id });
+      if (!targetStudent) {
+        targetStudent = await Student.findOne({ email: req.user.email.toLowerCase() });
+        if (targetStudent) {
+          targetStudent.userId = req.user._id;
+          await targetStudent.save();
+        }
+      }
     }
 
     const payload = {
@@ -225,10 +230,8 @@ export const getStudentPredictions = async (req: AuthRequest, res: Response): Pr
     const { studentId } = req.params;
     let query: any = {};
 
-    if (studentId === 'me' && req.user) {
-      const student = await Student.findOne({
-        $or: [{ userId: req.user._id }, { email: req.user.email }],
-      });
+    if ((studentId === 'me' || req.user?.role === 'STUDENT') && req.user) {
+      const student = (await Student.findOne({ userId: req.user._id })) || (await Student.findOne({ email: req.user.email.toLowerCase() }));
       if (student) {
         query = { studentId: student._id };
       } else {

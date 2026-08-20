@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { studyPlanApi, studentApi } from '../../services/api';
 import { StudyPlan } from '../../types';
+import { useAuth } from '../../context/AuthContext';
 import confetti from 'canvas-confetti';
 import {
   Calendar,
@@ -15,19 +16,27 @@ import {
 } from 'lucide-react';
 
 export const StudentStudyPlanPage: React.FC = () => {
+  const { studentProfile } = useAuth();
   const [studyPlan, setStudyPlan] = useState<StudyPlan | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [generating, setGenerating] = useState<boolean>(false);
 
   // Form Inputs
-  const [targetGPA, setTargetGPA] = useState<number>(8.5);
+  const [targetGPA, setTargetGPA] = useState<number>(() => {
+    return studentProfile?.currentGPA ? Math.min(10, Math.round((studentProfile.currentGPA + 0.5) * 10) / 10) : 8.5;
+  });
   const [examDate, setExamDate] = useState<string>(
     new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
   );
-  const [availableHours, setAvailableHours] = useState<number>(4);
-  const [weakSubjectsInput, setWeakSubjectsInput] = useState<string>(
-    'Data Structures & Algorithms, Operating Systems, Database Systems'
-  );
+  const [availableHours, setAvailableHours] = useState<number>(() => studentProfile?.studyHours || 4);
+  const [weakSubjectsInput, setWeakSubjectsInput] = useState<string>(() => {
+    if (studentProfile?.subjects && studentProfile.subjects.length > 0) {
+      const weak = studentProfile.subjects.filter((s) => s.score < 80);
+      const list = weak.length > 0 ? weak : studentProfile.subjects;
+      return list.map((s) => s.name).join(', ');
+    }
+    return '';
+  });
   const [selectedDay, setSelectedDay] = useState<string>('Monday');
 
   const fetchExistingPlan = async () => {
@@ -38,7 +47,7 @@ export const StudentStudyPlanPage: React.FC = () => {
         setStudyPlan(res.data);
         setTargetGPA(res.data.targetGPA);
         setAvailableHours(res.data.availableHours);
-        if (res.data.weakSubjects) {
+        if (res.data.weakSubjects && res.data.weakSubjects.length > 0) {
           setWeakSubjectsInput(res.data.weakSubjects.join(', '));
         }
       }

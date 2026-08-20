@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { studentApi } from '../../services/api';
 import { Student, SubjectItem } from '../../types';
@@ -34,45 +34,65 @@ export const CompleteProfileModal: React.FC<CompleteProfileModalProps> = ({
   onSuccess,
   existingProfile,
 }) => {
-  const { user, updateStudentProfile } = useAuth();
+  const { user, studentProfile, updateStudentProfile } = useAuth();
 
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
+  const activeSource = existingProfile || studentProfile;
+
   // Step 1: Basic & Institutional Details
-  const [name, setName] = useState(existingProfile?.name || user?.name || '');
-  const [studentId, setStudentId] = useState(existingProfile?.studentId || user?.studentId || '');
-  const [college, setCollege] = useState(existingProfile?.college || user?.college || 'National Institute of Technology');
-  const [department, setDepartment] = useState(existingProfile?.department || user?.department || 'Computer Science');
-  const [semester, setSemester] = useState<number>(existingProfile?.semester || user?.semester || 1);
-  const [year, setYear] = useState<number>(existingProfile?.year || Math.ceil((existingProfile?.semester || user?.semester || 1) / 2));
-  const [section, setSection] = useState(existingProfile?.section || 'A');
+  const [name, setName] = useState(activeSource?.name || user?.name || '');
+  const [studentId, setStudentId] = useState(activeSource?.studentId || user?.studentId || '');
+  const [college, setCollege] = useState(activeSource?.college || user?.college || '');
+  const [department, setDepartment] = useState(activeSource?.department || user?.department || 'Computer Science');
+  const [semester, setSemester] = useState<number>(activeSource?.semester || user?.semester || 1);
+  const [year, setYear] = useState<number>(activeSource?.year || Math.ceil((activeSource?.semester || user?.semester || 1) / 2));
+  const [section, setSection] = useState(activeSource?.section || '');
 
   // Step 2: Academic Metrics
-  const [currentGPA, setCurrentGPA] = useState<number>(existingProfile?.currentGPA || 8.2);
-  const [previousGPA, setPreviousGPA] = useState<number>(existingProfile?.previousGPA || 8.0);
-  const [attendance, setAttendance] = useState<number>(existingProfile?.attendance || 85);
-  const [previousMarks, setPreviousMarks] = useState<number>(existingProfile?.previousMarks || 82);
-  const [internalMarks, setInternalMarks] = useState<number>(existingProfile?.internalMarks || 80);
-  const [assignmentScore, setAssignmentScore] = useState<number>(existingProfile?.assignmentScore || 85);
-  const [studyHours, setStudyHours] = useState<number>(existingProfile?.studyHours || 4.0);
-  const [backlogs, setBacklogs] = useState<number>(existingProfile?.backlogs || 0);
-  const [participation, setParticipation] = useState<number>(existingProfile?.participation || 7);
+  const [currentGPA, setCurrentGPA] = useState<number>(activeSource?.currentGPA ?? 0);
+  const [previousGPA, setPreviousGPA] = useState<number>(activeSource?.previousGPA ?? 0);
+  const [attendance, setAttendance] = useState<number>(activeSource?.attendance ?? 0);
+  const [previousMarks, setPreviousMarks] = useState<number>(activeSource?.previousMarks ?? 0);
+  const [internalMarks, setInternalMarks] = useState<number>(activeSource?.internalMarks ?? 0);
+  const [assignmentScore, setAssignmentScore] = useState<number>(activeSource?.assignmentScore ?? 0);
+  const [studyHours, setStudyHours] = useState<number>(activeSource?.studyHours ?? 0);
+  const [backlogs, setBacklogs] = useState<number>(activeSource?.backlogs ?? 0);
+  const [participation, setParticipation] = useState<number>(activeSource?.participation ?? 5);
 
   // Step 3: Subject-wise Marks
-  const defaultSubjects: SubjectItem[] = existingProfile?.subjects && existingProfile.subjects.length > 0
-    ? existingProfile.subjects
-    : [
-        { name: 'Data Structures & Algorithms', score: 88, attendance: 90, internalMarks: 85 },
-        { name: 'Database Management Systems', score: 84, attendance: 85, internalMarks: 82 },
-        { name: 'Operating Systems', score: 79, attendance: 80, internalMarks: 76 },
-        { name: 'Computer Networks', score: 76, attendance: 82, internalMarks: 74 },
-        { name: 'Discrete Mathematics', score: 82, attendance: 88, internalMarks: 80 },
-      ];
+  const [subjects, setSubjects] = useState<SubjectItem[]>(activeSource?.subjects || []);
 
-  const [subjects, setSubjects] = useState<SubjectItem[]>(defaultSubjects);
+  useEffect(() => {
+    if (isOpen) {
+      const src = existingProfile || studentProfile;
+      setName(src?.name || user?.name || '');
+      setStudentId(src?.studentId || user?.studentId || '');
+      setCollege(src?.college || user?.college || '');
+      setDepartment(src?.department || user?.department || 'Computer Science');
+      setSemester(src?.semester || user?.semester || 1);
+      setYear(src?.year || Math.ceil((src?.semester || user?.semester || 1) / 2));
+      setSection(src?.section || '');
+
+      setCurrentGPA(src?.currentGPA ?? 0);
+      setPreviousGPA(src?.previousGPA ?? 0);
+      setAttendance(src?.attendance ?? 0);
+      setPreviousMarks(src?.previousMarks ?? 0);
+      setInternalMarks(src?.internalMarks ?? 0);
+      setAssignmentScore(src?.assignmentScore ?? 0);
+      setStudyHours(src?.studyHours ?? 0);
+      setBacklogs(src?.backlogs ?? 0);
+      setParticipation(src?.participation ?? 5);
+
+      setSubjects(src?.subjects && src.subjects.length > 0 ? src.subjects : []);
+      setError(null);
+      setSuccessMessage(null);
+      setStep(1);
+    }
+  }, [isOpen, existingProfile, studentProfile, user]);
 
   if (!isOpen) return null;
 
@@ -82,7 +102,7 @@ export const CompleteProfileModal: React.FC<CompleteProfileModalProps> = ({
   };
 
   const handleAddSubject = () => {
-    setSubjects([...subjects, { name: '', score: 75, attendance: 80, internalMarks: 75 }]);
+    setSubjects([...subjects, { name: '', score: 75, attendance: attendance || 75, internalMarks: internalMarks || 70 }]);
   };
 
   const handleRemoveSubject = (idx: number) => {
@@ -100,22 +120,26 @@ export const CompleteProfileModal: React.FC<CompleteProfileModalProps> = ({
   };
 
   const handlePrepopulateStandardSubjects = () => {
+    const baseMark = previousMarks || 75;
+    const baseAtt = attendance || 80;
+    const baseInt = internalMarks || 75;
+
     let list: SubjectItem[] = [];
     if (department.toLowerCase().includes('computer') || department.toLowerCase().includes('it') || department.toLowerCase().includes('artificial')) {
       list = [
-        { name: 'Data Structures & Algorithms', score: Math.round(previousMarks + 4), attendance: attendance, internalMarks: internalMarks },
-        { name: 'Database Management Systems', score: Math.round(previousMarks + 2), attendance: attendance, internalMarks: internalMarks },
-        { name: 'Operating Systems', score: Math.round(previousMarks - 2), attendance: attendance, internalMarks: internalMarks },
-        { name: 'Computer Networks', score: Math.round(previousMarks - 5), attendance: attendance, internalMarks: internalMarks },
-        { name: 'Software Engineering', score: Math.round(previousMarks + 3), attendance: attendance, internalMarks: internalMarks },
+        { name: 'Data Structures & Algorithms', score: Math.min(100, Math.round(baseMark + 4)), attendance: baseAtt, internalMarks: baseInt },
+        { name: 'Database Management Systems', score: Math.min(100, Math.round(baseMark + 2)), attendance: baseAtt, internalMarks: baseInt },
+        { name: 'Operating Systems', score: Math.max(0, Math.round(baseMark - 2)), attendance: baseAtt, internalMarks: baseInt },
+        { name: 'Computer Networks', score: Math.max(0, Math.round(baseMark - 4)), attendance: baseAtt, internalMarks: baseInt },
+        { name: 'Software Engineering', score: Math.min(100, Math.round(baseMark + 3)), attendance: baseAtt, internalMarks: baseInt },
       ];
     } else {
       list = [
-        { name: `${department} Core Module 1`, score: Math.round(previousMarks + 2), attendance: attendance, internalMarks: internalMarks },
-        { name: `${department} Core Module 2`, score: Math.round(previousMarks), attendance: attendance, internalMarks: internalMarks },
-        { name: 'Applied Mathematics', score: Math.round(previousMarks - 3), attendance: attendance, internalMarks: internalMarks },
-        { name: 'Engineering Physics / Electronics', score: Math.round(previousMarks + 1), attendance: attendance, internalMarks: internalMarks },
-        { name: 'Technical Communication & Ethics', score: Math.round(previousMarks + 6), attendance: attendance, internalMarks: internalMarks },
+        { name: `${department} Core Module 1`, score: Math.min(100, Math.round(baseMark + 2)), attendance: baseAtt, internalMarks: baseInt },
+        { name: `${department} Core Module 2`, score: Math.round(baseMark), attendance: baseAtt, internalMarks: baseInt },
+        { name: 'Applied Mathematics', score: Math.max(0, Math.round(baseMark - 3)), attendance: baseAtt, internalMarks: baseInt },
+        { name: 'Engineering Physics / Electronics', score: Math.min(100, Math.round(baseMark + 1)), attendance: baseAtt, internalMarks: baseInt },
+        { name: 'Technical Communication & Ethics', score: Math.min(100, Math.round(baseMark + 5)), attendance: baseAtt, internalMarks: baseInt },
       ];
     }
     setSubjects(list);
@@ -183,7 +207,7 @@ export const CompleteProfileModal: React.FC<CompleteProfileModalProps> = ({
           if (onClose) {
             onClose();
           }
-        }, 1200);
+        }, 1000);
       } else {
         throw new Error(res.message || 'Failed to save profile.');
       }
@@ -273,7 +297,7 @@ export const CompleteProfileModal: React.FC<CompleteProfileModalProps> = ({
           </div>
         )}
 
-        {/* RED ERROR BANNER (Only if actual failure, never on success) */}
+        {/* RED ERROR BANNER */}
         {error && !successMessage && (
           <div className="mb-5 p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs flex items-start gap-2.5">
             <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
@@ -318,12 +342,11 @@ export const CompleteProfileModal: React.FC<CompleteProfileModalProps> = ({
               </div>
 
               <div>
-                <label className="block text-slate-300 font-semibold mb-1">College / Institute / University *</label>
+                <label className="block text-slate-300 font-semibold mb-1">College / Institute / University</label>
                 <div className="relative">
                   <School className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
                   <input
                     type="text"
-                    required
                     value={college}
                     onChange={(e) => setCollege(e.target.value)}
                     placeholder="e.g. National Institute of Technology"
@@ -352,7 +375,7 @@ export const CompleteProfileModal: React.FC<CompleteProfileModalProps> = ({
                 </div>
 
                 <div>
-                  <label className="block text-slate-300 font-semibold mb-1">Section (Optional)</label>
+                  <label className="block text-slate-300 font-semibold mb-1">Section</label>
                   <input
                     type="text"
                     value={section}
@@ -464,13 +487,12 @@ export const CompleteProfileModal: React.FC<CompleteProfileModalProps> = ({
                 </div>
 
                 <div className="p-3 rounded-2xl bg-slate-900/90 border border-slate-800">
-                  <label className="block text-slate-300 font-semibold mb-1">Daily Study Hours *</label>
+                  <label className="block text-slate-300 font-semibold mb-1">Daily Study Hours</label>
                   <input
                     type="number"
                     step="0.5"
                     min="0"
                     max="24"
-                    required
                     value={studyHours}
                     onChange={(e) => setStudyHours(Number(e.target.value))}
                     className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-white font-mono"
@@ -479,12 +501,11 @@ export const CompleteProfileModal: React.FC<CompleteProfileModalProps> = ({
                 </div>
 
                 <div className="p-3 rounded-2xl bg-slate-900/90 border border-slate-800">
-                  <label className="block text-slate-300 font-semibold mb-1">Active Backlogs *</label>
+                  <label className="block text-slate-300 font-semibold mb-1">Active Backlogs</label>
                   <input
                     type="number"
                     min="0"
                     max="20"
-                    required
                     value={backlogs}
                     onChange={(e) => setBacklogs(Number(e.target.value))}
                     className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-white font-mono"
@@ -559,7 +580,7 @@ export const CompleteProfileModal: React.FC<CompleteProfileModalProps> = ({
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-slate-800">
                 <div>
                   <h3 className="font-bold text-white">Current Semester Subjects & Subject-wise Marks</h3>
-                  <p className="text-slate-400 text-[11px]">List your current registered subjects and scores for precision AI subject benchmarking.</p>
+                  <p className="text-slate-400 text-[11px]">List your registered course modules and scores for AI subject benchmarking.</p>
                 </div>
 
                 <div className="flex items-center gap-2">
@@ -581,62 +602,88 @@ export const CompleteProfileModal: React.FC<CompleteProfileModalProps> = ({
                 </div>
               </div>
 
-              <div className="max-h-72 overflow-y-auto space-y-2.5 pr-1">
-                {subjects.map((sub, idx) => (
-                  <div
-                    key={idx}
-                    className="p-3 rounded-2xl bg-slate-900/90 border border-slate-800 grid grid-cols-12 gap-2.5 items-center"
-                  >
-                    <div className="col-span-12 sm:col-span-6">
-                      <label className="text-[10px] text-slate-400 block mb-0.5">Subject Name</label>
-                      <input
-                        type="text"
-                        required
-                        value={sub.name}
-                        onChange={(e) => handleSubjectChange(idx, 'name', e.target.value)}
-                        placeholder="e.g. Data Structures & Algorithms"
-                        className="w-full px-2.5 py-1.5 rounded-lg bg-slate-950 border border-slate-700 text-white text-xs"
-                      />
-                    </div>
-
-                    <div className="col-span-4 sm:col-span-2">
-                      <label className="text-[10px] text-slate-400 block mb-0.5">Marks (/100)</label>
-                      <input
-                        type="number"
-                        min="0"
-                        max="100"
-                        required
-                        value={sub.score}
-                        onChange={(e) => handleSubjectChange(idx, 'score', e.target.value)}
-                        className="w-full px-2 py-1.5 rounded-lg bg-slate-950 border border-slate-700 text-white font-mono text-xs"
-                      />
-                    </div>
-
-                    <div className="col-span-4 sm:col-span-2">
-                      <label className="text-[10px] text-slate-400 block mb-0.5">Attendance %</label>
-                      <input
-                        type="number"
-                        min="0"
-                        max="100"
-                        value={sub.attendance || attendance}
-                        onChange={(e) => handleSubjectChange(idx, 'attendance', e.target.value)}
-                        className="w-full px-2 py-1.5 rounded-lg bg-slate-950 border border-slate-700 text-white font-mono text-xs"
-                      />
-                    </div>
-
-                    <div className="col-span-4 sm:col-span-2 flex items-center justify-end gap-1 pt-3">
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveSubject(idx)}
-                        disabled={subjects.length <= 1}
-                        className="p-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 disabled:opacity-30"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
+              {subjects.length === 0 ? (
+                <div className="p-8 rounded-2xl bg-slate-900/50 border border-dashed border-slate-800 text-center space-y-3">
+                  <BookOpen className="w-8 h-8 text-indigo-400 mx-auto opacity-70" />
+                  <p className="text-xs text-slate-300 font-semibold">No subjects added yet.</p>
+                  <p className="text-[11px] text-slate-400 max-w-sm mx-auto">
+                    You can either click "Auto-Fill Department Subjects" to load standard subjects for {department}, or click "Add Subject" to enter your custom course subjects.
+                  </p>
+                  <div className="flex items-center justify-center gap-2 pt-2">
+                    <button
+                      type="button"
+                      onClick={handlePrepopulateStandardSubjects}
+                      className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-indigo-300 text-xs font-semibold"
+                    >
+                      Auto-Fill Standard Subjects
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleAddSubject}
+                      className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold inline-flex items-center gap-1"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>Add Custom Subject</span>
+                    </button>
                   </div>
-                ))}
-              </div>
+                </div>
+              ) : (
+                <div className="max-h-72 overflow-y-auto space-y-2.5 pr-1">
+                  {subjects.map((sub, idx) => (
+                    <div
+                      key={idx}
+                      className="p-3 rounded-2xl bg-slate-900/90 border border-slate-800 grid grid-cols-12 gap-2.5 items-center"
+                    >
+                      <div className="col-span-12 sm:col-span-6">
+                        <label className="text-[10px] text-slate-400 block mb-0.5">Subject Name</label>
+                        <input
+                          type="text"
+                          required
+                          value={sub.name}
+                          onChange={(e) => handleSubjectChange(idx, 'name', e.target.value)}
+                          placeholder="e.g. Data Structures & Algorithms"
+                          className="w-full px-2.5 py-1.5 rounded-lg bg-slate-950 border border-slate-700 text-white text-xs"
+                        />
+                      </div>
+
+                      <div className="col-span-4 sm:col-span-2">
+                        <label className="text-[10px] text-slate-400 block mb-0.5">Marks (/100)</label>
+                        <input
+                          type="number"
+                          min="0"
+                          max="100"
+                          required
+                          value={sub.score}
+                          onChange={(e) => handleSubjectChange(idx, 'score', e.target.value)}
+                          className="w-full px-2 py-1.5 rounded-lg bg-slate-950 border border-slate-700 text-white font-mono text-xs"
+                        />
+                      </div>
+
+                      <div className="col-span-4 sm:col-span-2">
+                        <label className="text-[10px] text-slate-400 block mb-0.5">Attendance %</label>
+                        <input
+                          type="number"
+                          min="0"
+                          max="100"
+                          value={sub.attendance || attendance}
+                          onChange={(e) => handleSubjectChange(idx, 'attendance', e.target.value)}
+                          className="w-full px-2 py-1.5 rounded-lg bg-slate-950 border border-slate-700 text-white font-mono text-xs"
+                        />
+                      </div>
+
+                      <div className="col-span-4 sm:col-span-2 flex items-center justify-end gap-1 pt-3">
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveSubject(idx)}
+                          className="p-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
 
               <div className="pt-4 border-t border-slate-800 flex justify-between items-center">
                 <button

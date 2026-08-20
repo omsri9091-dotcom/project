@@ -83,26 +83,47 @@ export const getMyProfile = async (req: AuthRequest, res: Response): Promise<voi
       return;
     }
 
-    let student = await Student.findOne({
-      $or: [{ userId: req.user._id }, { email: req.user.email }],
-    });
-
-    if (student && !student.userId) {
-      student.userId = req.user._id;
-      await student.save();
+    let student = await Student.findOne({ userId: req.user._id });
+    if (!student) {
+      student = await Student.findOne({ email: req.user.email.toLowerCase() });
+      if (student) {
+        student.userId = req.user._id;
+        await student.save();
+      }
+    }
+    if (!student && req.user.studentId) {
+      student = await Student.findOne({ studentId: req.user.studentId });
+      if (student) {
+        student.userId = req.user._id;
+        await student.save();
+      }
     }
 
     if (!student) {
-      res.status(200).json({
-        success: true,
-        data: {
-          student: null,
-          isProfileCompleted: false,
-          predictions: [],
-          recommendations: [],
-        },
+      student = await Student.create({
+        userId: req.user._id,
+        studentId: req.user.studentId || `ADX-${Math.floor(1000 + Math.random() * 9000)}`,
+        name: req.user.name,
+        email: req.user.email,
+        college: req.user.college || '',
+        department: req.user.department || 'Computer Science',
+        semester: req.user.semester || 1,
+        isProfileCompleted: false,
+        attendance: 0,
+        studyHours: 0,
+        previousMarks: 0,
+        assignmentScore: 0,
+        internalMarks: 0,
+        previousGPA: 0,
+        participation: 5,
+        backlogs: 0,
+        currentGPA: 0,
+        subjects: [],
+        semesterHistory: [],
+        performanceScore: 0,
+        performanceLevel: 'Average',
+        riskLevel: 'Low',
       });
-      return;
     }
 
     const [predictions, recommendations] = await Promise.all([
@@ -131,12 +152,20 @@ export const getStudentById = async (req: AuthRequest, res: Response): Promise<v
     // RBAC: If student role or 'me', ensure they view strictly their own profile
     let student = null;
     if (req.user?.role === 'STUDENT' || id === 'me') {
-      const orList: any[] = [{ userId: req.user?._id }, { email: req.user?.email }];
-      if (req.user?.studentId) orList.push({ studentId: req.user.studentId });
-      student = await Student.findOne({ $or: orList });
-      if (student && req.user?._id && !student.userId) {
-        student.userId = req.user._id;
-        await student.save();
+      student = await Student.findOne({ userId: req.user?._id });
+      if (!student && req.user) {
+        student = await Student.findOne({ email: req.user.email.toLowerCase() });
+        if (student && !student.userId) {
+          student.userId = req.user._id;
+          await student.save();
+        }
+      }
+      if (!student && req.user?.studentId) {
+        student = await Student.findOne({ studentId: req.user.studentId });
+        if (student && !student.userId) {
+          student.userId = req.user._id;
+          await student.save();
+        }
       }
     } else if (mongoose.Types.ObjectId.isValid(id)) {
       student = await Student.findById(id);
@@ -197,11 +226,22 @@ export const saveMyProfile = async (req: AuthRequest, res: Response): Promise<vo
 
     const studentName = (name && name.trim()) || req.user.name;
     const sId = (studentId && studentId.trim().toUpperCase()) || req.user.studentId || `ADX-${Math.floor(1000 + Math.random() * 9000)}`;
+
+    // Validate that studentId is not in use by another user/student
+    if (sId !== req.user.studentId) {
+      const existingUserWithId = await User.findOne({ studentId: sId, _id: { $ne: req.user._id } });
+      const existingStudentWithId = await Student.findOne({ studentId: sId, userId: { $ne: req.user._id } });
+      if (existingUserWithId || existingStudentWithId) {
+        res.status(400).json({ success: false, message: 'This Student ID is already registered to another student.' });
+        return;
+      }
+    }
+
     const dept = (department && department.trim()) || req.user.department || 'Computer Science';
     const sem = Number(semester) || req.user.semester || 1;
     const yr = Number(year) || Math.ceil(sem / 2) || 1;
-    const clg = (college && college.trim()) || req.user.college || '';
-    const sec = (section && section.trim()) || '';
+    const clg = college !== undefined ? college.trim() : (req.user.college || '');
+    const sec = section !== undefined ? section.trim() : '';
 
     // Validate numeric inputs
     const att = Math.min(100, Math.max(0, Number(attendance) || 0));
@@ -267,9 +307,13 @@ export const saveMyProfile = async (req: AuthRequest, res: Response): Promise<vo
     else if (perfLevel === 'Average' || att < 75 || bl === 1) risk = 'Medium';
 
     // Find or create student document associated with userId
-    let student = await Student.findOne({
-      $or: [{ userId: req.user._id }, { email: req.user.email }],
-    });
+    let student = await Student.findOne({ userId: req.user._id });
+    if (!student) {
+      student = await Student.findOne({ email: req.user.email.toLowerCase() });
+    }
+    if (!student && req.user.studentId) {
+      student = await Student.findOne({ studentId: req.user.studentId });
+    }
 
     if (!student) {
       student = new Student({
@@ -306,14 +350,18 @@ export const saveMyProfile = async (req: AuthRequest, res: Response): Promise<vo
     await student.save();
 
     // Update User record
-    await User.findByIdAndUpdate(req.user._id, {
-      name: studentName,
-      studentId: sId,
-      college: clg,
-      department: dept,
-      semester: sem,
-      isProfileCompleted: true,
-    });
+    const updatedUser = await User.findByIdAndUpdate(
+      req.user._id,
+      {
+        name: studentName,
+        studentId: sId,
+        college: clg,
+        department: dept,
+        semester: sem,
+        isProfileCompleted: true,
+      },
+      { new: true }
+    );
 
     // Auto-generate fresh recommendations specific to this student
     const recs = [];
@@ -426,6 +474,21 @@ export const saveMyProfile = async (req: AuthRequest, res: Response): Promise<vo
         predictions: [createdPrediction],
         recommendations: createdRecs,
       },
+      user: updatedUser
+        ? {
+            id: updatedUser._id,
+            name: updatedUser.name,
+            email: updatedUser.email,
+            role: updatedUser.role,
+            studentId: updatedUser.studentId,
+            college: updatedUser.college,
+            department: updatedUser.department,
+            semester: updatedUser.semester,
+            profileImage: updatedUser.profileImage,
+            isProfileCompleted: true,
+            studentProfile: student,
+          }
+        : undefined,
     });
   } catch (error: any) {
     console.error('Error saving profile:', error);

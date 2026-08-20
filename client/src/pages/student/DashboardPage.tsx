@@ -61,6 +61,12 @@ export const StudentDashboardPage: React.FC = () => {
     fetchStudentData();
   }, []);
 
+  useEffect(() => {
+    if (studentProfile) {
+      setStudent(studentProfile);
+    }
+  }, [studentProfile]);
+
   const latestPrediction = predictions[0];
   const firstName = user?.name ? user.name.split(' ')[0] : 'Student';
   const isCompleted = Boolean(student?.isProfileCompleted);

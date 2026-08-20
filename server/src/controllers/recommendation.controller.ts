@@ -7,13 +7,10 @@ export const generateRecommendations = async (req: AuthRequest, res: Response): 
   try {
     const { studentId } = req.body;
     let student = null;
-
-    if (studentId) {
+    if (studentId && req.user?.role === 'ADMIN') {
       student = await Student.findById(studentId);
     } else if (req.user?.role === 'STUDENT') {
-      student = await Student.findOne({
-        $or: [{ userId: req.user._id }, { email: req.user.email }],
-      });
+      student = (await Student.findOne({ userId: req.user._id })) || (await Student.findOne({ email: req.user.email.toLowerCase() }));
     }
 
     if (!student) {
@@ -115,12 +112,13 @@ export const getRecommendationsByStudent = async (req: AuthRequest, res: Respons
     const { studentId } = req.params;
     let targetStudentId = studentId;
 
-    if (req.user?.role === 'STUDENT') {
-      const orList: any[] = [{ userId: req.user._id }, { email: req.user.email }];
-      if (req.user.studentId) orList.push({ studentId: req.user.studentId });
-      const student = await Student.findOne({ $or: orList });
+    if (req.user?.role === 'STUDENT' || studentId === 'me') {
+      const student = (await Student.findOne({ userId: req.user?._id })) || (await Student.findOne({ email: req.user?.email.toLowerCase() }));
       if (student) {
         targetStudentId = student._id.toString();
+      } else {
+        res.status(200).json({ success: true, data: [] });
+        return;
       }
     }
 

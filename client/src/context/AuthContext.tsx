@@ -28,7 +28,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [token, setToken] = useState<string | null>(() => {
     return localStorage.getItem('adexa_token');
   });
-  const [studentProfile, setStudentProfile] = useState<Student | null>(null);
+  const [studentProfile, setStudentProfile] = useState<Student | null>(() => {
+    const savedStudent = localStorage.getItem('adexa_student');
+    if (savedStudent) {
+      try {
+        return JSON.parse(savedStudent);
+      } catch {
+        // ignore
+      }
+    }
+    const savedUser = localStorage.getItem('adexa_user');
+    if (savedUser) {
+      try {
+        const u = JSON.parse(savedUser);
+        return u.studentProfile || null;
+      } catch {
+        return null;
+      }
+    }
+    return null;
+  });
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   const fetchSession = async () => {
@@ -42,6 +61,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(res.user);
         if (res.user.studentProfile) {
           setStudentProfile(res.user.studentProfile);
+          localStorage.setItem('adexa_student', JSON.stringify(res.user.studentProfile));
         }
         localStorage.setItem('adexa_user', JSON.stringify(res.user));
       }
@@ -66,8 +86,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(res.user);
         if (res.user.studentProfile) {
           setStudentProfile(res.user.studentProfile);
+          localStorage.setItem('adexa_student', JSON.stringify(res.user.studentProfile));
         } else {
           setStudentProfile(null);
+          localStorage.removeItem('adexa_student');
         }
         localStorage.setItem('adexa_token', res.token);
         localStorage.setItem('adexa_user', JSON.stringify(res.user));
@@ -87,8 +109,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(res.user);
         if (res.user.studentProfile) {
           setStudentProfile(res.user.studentProfile);
+          localStorage.setItem('adexa_student', JSON.stringify(res.user.studentProfile));
         } else {
           setStudentProfile(null);
+          localStorage.removeItem('adexa_student');
         }
         localStorage.setItem('adexa_token', res.token);
         localStorage.setItem('adexa_user', JSON.stringify(res.user));
@@ -105,6 +129,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setToken(null);
     localStorage.removeItem('adexa_token');
     localStorage.removeItem('adexa_user');
+    localStorage.removeItem('adexa_student');
   };
 
   const updateUser = (updatedUser: Partial<User>) => {
@@ -117,6 +142,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const updateStudentProfile = (profile: Student) => {
     setStudentProfile(profile);
+    localStorage.setItem('adexa_student', JSON.stringify(profile));
     if (user) {
       const updatedUser = {
         ...user,

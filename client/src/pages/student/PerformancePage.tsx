@@ -27,8 +27,11 @@ import {
   Legend,
 } from 'recharts';
 
+import { useAuth } from '../../context/AuthContext';
+
 export const StudentPerformancePage: React.FC = () => {
-  const [student, setStudent] = useState<Student | null>(null);
+  const { studentProfile, updateStudentProfile } = useAuth();
+  const [student, setStudent] = useState<Student | null>(studentProfile);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -38,6 +41,9 @@ export const StudentPerformancePage: React.FC = () => {
       const res = await studentApi.getMyProfile();
       if (res.success && res.data) {
         setStudent(res.data.student);
+        if (res.data.student) {
+          updateStudentProfile(res.data.student);
+        }
       }
     } catch (error) {
       console.error('Failed to load performance trends:', error);
@@ -49,6 +55,12 @@ export const StudentPerformancePage: React.FC = () => {
   useEffect(() => {
     fetchProfile();
   }, []);
+
+  useEffect(() => {
+    if (studentProfile) {
+      setStudent(studentProfile);
+    }
+  }, [studentProfile]);
 
   const isCompleted = Boolean(student?.isProfileCompleted);
   const gpa = student?.currentGPA || 0;
@@ -64,11 +76,11 @@ export const StudentPerformancePage: React.FC = () => {
         semester: s.semester,
         gpa: s.gpa,
         attendance: s.attendance,
-        internals: student.internalMarks || 75,
+        internals: student.internalMarks ?? 0,
       }))
     : [
-        { semester: `Sem ${(student?.semester || 1) - 1 || 1}`, gpa: prevGpa, attendance: student?.attendance || 0, internals: student?.internalMarks || 0 },
-        { semester: `Sem ${student?.semester || 1} (Current)`, gpa: gpa, attendance: student?.attendance || 0, internals: student?.internalMarks || 0 },
+        { semester: `Sem ${(student?.semester || 1) - 1 || 1}`, gpa: prevGpa, attendance: student?.attendance || 0, internals: student?.internalMarks ?? 0 },
+        { semester: `Sem ${student?.semester || 1} (Current)`, gpa: gpa, attendance: student?.attendance || 0, internals: student?.internalMarks ?? 0 },
       ];
 
   // Dynamic Subject Scores from real student records
