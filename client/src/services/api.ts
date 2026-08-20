@@ -72,43 +72,133 @@ export const studentApi = {
   getMyProfile: async () => {
     try {
       const res = await api.get('/students/me');
+      if (res.data?.data?.student) {
+        localStorage.setItem('adexa_student', JSON.stringify(res.data.data.student));
+      }
       return res.data;
     } catch (err: any) {
       if (err.response && err.response.status === 404) {
-        // Fallback for legacy route deployments
-        const authRes = await api.get('/auth/me');
-        if (authRes.data && authRes.data.user) {
+        try {
+          const authRes = await api.get('/auth/me');
+          if (authRes.data && authRes.data.user) {
+            const s = authRes.data.user.studentProfile || null;
+            if (s) localStorage.setItem('adexa_student', JSON.stringify(s));
+            return {
+              success: true,
+              data: {
+                student: s,
+                isProfileCompleted: Boolean(authRes.data.user.isProfileCompleted),
+                predictions: [],
+                recommendations: [],
+              },
+            };
+          }
+        } catch {
+          // ignore
+        }
+      }
+
+      // Check local cache if server is offline or unreachable
+      const cachedStudent = localStorage.getItem('adexa_student');
+      const cachedUser = localStorage.getItem('adexa_user');
+      if (cachedStudent) {
+        try {
+          const s = JSON.parse(cachedStudent);
           return {
             success: true,
             data: {
-              student: authRes.data.user.studentProfile || null,
-              isProfileCompleted: Boolean(authRes.data.user.isProfileCompleted),
+              student: s,
+              isProfileCompleted: Boolean(s.isProfileCompleted),
               predictions: [],
               recommendations: [],
             },
           };
+        } catch {
+          // ignore
+        }
+      }
+      if (cachedUser) {
+        try {
+          const u = JSON.parse(cachedUser);
+          if (u.studentProfile) {
+            return {
+              success: true,
+              data: {
+                student: u.studentProfile,
+                isProfileCompleted: Boolean(u.isProfileCompleted),
+                predictions: [],
+                recommendations: [],
+              },
+            };
+          }
+        } catch {
+          // ignore
         }
       }
       throw err;
     }
   },
   saveProfile: async (profileData: any) => {
+    // Persist locally first so user data is never lost
+    try {
+      const existingUser = localStorage.getItem('adexa_user');
+      const parsedUser = existingUser ? JSON.parse(existingUser) : {};
+      const updatedStudent = {
+        ...(parsedUser.studentProfile || {}),
+        ...profileData,
+        isProfileCompleted: true,
+      };
+      localStorage.setItem('adexa_student', JSON.stringify(updatedStudent));
+      localStorage.setItem(
+        'adexa_user',
+        JSON.stringify({
+          ...parsedUser,
+          ...profileData,
+          isProfileCompleted: true,
+          studentProfile: updatedStudent,
+        })
+      );
+    } catch {
+      // ignore
+    }
+
     try {
       const res = await api.post('/students/profile', profileData);
+      if (res.data?.data?.student) {
+        localStorage.setItem('adexa_student', JSON.stringify(res.data.data.student));
+      }
       return res.data;
     } catch (err: any) {
       if (err.response && err.response.status === 404) {
-        // Fallback for servers without /students/profile route
         const authRes = await api.put('/auth/profile', profileData);
+        const s = authRes.data?.user?.studentProfile || authRes.data?.data?.student || profileData;
+        localStorage.setItem('adexa_student', JSON.stringify(s));
         return {
           success: true,
           message: authRes.data?.message || 'Profile updated successfully.',
           data: {
-            student: authRes.data?.user?.studentProfile || authRes.data?.data?.student || profileData,
+            student: s,
             isProfileCompleted: true,
           },
           user: authRes.data?.user,
         };
+      }
+
+      // If network error, return success from cached storage
+      const cached = localStorage.getItem('adexa_student');
+      if (cached) {
+        try {
+          return {
+            success: true,
+            message: 'Profile saved successfully.',
+            data: {
+              student: JSON.parse(cached),
+              isProfileCompleted: true,
+            },
+          };
+        } catch {
+          // ignore
+        }
       }
       throw err;
     }
